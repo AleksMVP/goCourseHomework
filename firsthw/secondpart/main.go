@@ -6,26 +6,31 @@ import (
 	"unicode"
 )
 
-var lexem map[string]int = map[string]int{
+var weight map[string]int = map[string]int{
 	"+": 1,
 	"-": 1,
 	"*": 2,
 	"/": 2,
 }
 
-func doOperation(operation string, first, second int) (result int) {
-	switch operation {
-	case "+":
-		result = second + first
-	case "-":
-		result = second - first
-	case "*":
-		result= second * first
-	case "/":
-		result = second / first
+func invokeOperation(operation string, digits *Stack) (result int, err error) {
+	first, second, err := popTwoItems(digits)
+	if err != nil {
+		return result, err
 	}
 
-	return result
+	switch operation {
+	case "+":
+		result = second.(int) + first.(int)
+	case "-":
+		result = second.(int) - first.(int)
+	case "*":
+		result= second.(int) * first.(int)
+	case "/":
+		result = second.(int) / first.(int)
+	}
+
+	return result, nil
 }
 
 func popTwoItems(s *Stack) (first, second interface{}, err error) {
@@ -33,57 +38,49 @@ func popTwoItems(s *Stack) (first, second interface{}, err error) {
 	if err != nil {
 		return
 	}
-
+	
 	second, err = s.pop()
 	return
 }
 
 func calc(lexems []string) (result int, err error) {
 	var digits Stack
-	var symbols Stack
+	var operations Stack
 
-	for _, symb := range lexems {
-		if priority, is := lexem[symb]; is {
-			topSymb, err := symbols.top();
-			if err != nil || priority > lexem[topSymb.(string)] {
-				symbols.push(symb)
-			} else if priority <= lexem[topSymb.(string)] {
-				operation, err := symbols.pop()
+	for _, oper := range lexems {
+		if priority, is := weight[oper]; is {
+			topOper, err := operations.top();
+			if err != nil || priority > weight[topOper.(string)] {
+				operations.push(oper)
+			} else if priority <= weight[topOper.(string)] {
+				operation, _ := operations.pop()
+				res, err := invokeOperation(operation.(string), &digits)
 				if err != nil {
 					return result, err
 				}
-
-				first, second, err := popTwoItems(&digits)
-				if err != nil {
-					return result, err
-				}
-
-				res := doOperation(operation.(string), first.(int), second.(int))
 				digits.push(res)
-				symbols.push(symb)
+				operations.push(oper)
 			}
-		} else if symb == "(" {
-			symbols.push(symb)
-		} else if symb == ")" {
+		} else if oper == "(" {
+			operations.push(oper)
+		} else if oper == ")" {
 			for {
-				operation, err := symbols.pop()
+				operation, err := operations.pop()
 				if err != nil {
 					return result, err
 				}
 				if operation == "(" {
 					break;
 				}
-
-				first, second, err := popTwoItems(&digits)
+				res, err := invokeOperation(operation.(string), &digits)
 				if err != nil {
 					return result, err
 				}
 
-				res := doOperation(operation.(string), first.(int), second.(int))
 				digits.push(res)
 			}
 		} else {  // If digit 
-			digit, err := strconv.Atoi(symb)
+			digit, err := strconv.Atoi(oper)
 			if err != nil {
 				return result, err
 			}
@@ -91,14 +88,12 @@ func calc(lexems []string) (result int, err error) {
 		}
 	}
 
-	for {
-		operation, err := symbols.pop()
+	for operations.size() > 0 {
+		operation, _ := operations.pop()
+		res, err := invokeOperation(operation.(string), &digits)
 		if err != nil {
-			break;
+			return result, err
 		}
-
-		first, second, _ := popTwoItems(&digits)
-		res := doOperation(operation.(string), first.(int), second.(int))
 		digits.push(res)
 	}
 
@@ -146,7 +141,7 @@ func parser(line string) (result []string) {
 
 func main() {
 	var input string
-    fmt.Scanln(&input)
+	fmt.Scanln(&input)
 	res, err := calc(parser(input))
 	fmt.Println(res, err)
 }
