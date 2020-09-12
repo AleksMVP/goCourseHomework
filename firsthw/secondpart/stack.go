@@ -29,3 +29,7 @@ func (s *Stack)top() (item interface{}, err error) {
 
 	return s.array[len(s.array) - 1], nil
 }
+
+func (s *Stack)size() int {
+	return len(s.array)
+}
