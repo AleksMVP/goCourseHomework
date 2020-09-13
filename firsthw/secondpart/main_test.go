@@ -13,40 +13,101 @@ func TestCalc(t *testing.T) {
 		{
 			input: []string{"10", "+", "15", "-", "15"},
 			result: 10,
-			err: false,
 		},
 		{
 			input: []string{"10", "+", "15", "+", "15"},
 			result: 40,
-			err: false,
 		},
 		{
 			input: []string{"10", "+", "15", "-", "15", "*", "1000"},
 			result: -14975,
-			err: false,
 		},
 		{
 			input: []string{"1000", "*", "(", "2", "-", "15", ")"},
 			result: -13000,
-			err: false,
 		},
 		{
 			input: []string{"1000", "*", "(", "2", "+", "8", ")"},
 			result: 10000,
-			err: false,
+		},
+	}
+
+	for num, test := range testCases {
+		out := calc(test.input)
+		if out != test.result {
+			t.Errorf("%d != %d\n Test number: %d", out, test.result, num)
+		}
+	}
+}
+
+func TestParser(t *testing.T) {
+	var testCases = []struct {
+		input string
+		result []string
+	}{
+		{
+			input: "5+10",
+			result: []string{"5", "+", "10"},
+		},
+		{
+			input: "(1000+5)",
+			result: []string{"(","1000", "+", "5", ")"},
+		},
+		{
+			input: "1000+2*(25+100/4*(2*(2+2)))",
+			result: []string{"1000", "+", "2", "*", "(", "25","+", "100", "/", "4", "*","(", "2", "*", "(", "2", "+", "2", ")", ")", ")"},
+		},
+		{
+			input: "(1000+5)",
+			result: []string{"(","1000", "+", "5", ")"},
 		},
 	}
 
 	for _, test := range testCases {
-		out, err := calc(test.input)
-		if err == nil && test.err {
-			t.Errorf("Something happened")
+		out := parser(test.input)
+		for num := range out {
+			if out[num] != test.result[num] {
+				t.Errorf("%s != %s\n Test number: %d", out[num], test.result[num], num)
+			}
 		}
-		if err != nil && !test.err {
-			t.Errorf("Something happened")
-		}
-		if err == nil && out != test.result {
-			t.Errorf("Something happened")
+	}
+}
+
+func TestBoth(t *testing.T) {
+	var testCases = []struct {
+		input string
+		result int
+	}{
+		{
+			input: "5+10",
+			result: 15,
+		},
+		{
+			input: "2+2*2",
+			result: 6,
+		},
+		{
+			input: "1000+2*(25+100/4*(2*(2+2)))",
+			result: 1450,
+		},
+		{
+			input: "(1000+5)",
+			result: 1005,
+		},
+		{
+			input: "(1+2)-3",
+			result: 0,
+		},
+		{
+			input: "(1+2)*3",
+			result: 9,
+		},
+	}
+
+	for num, test := range testCases {
+		out := calc(parser(test.input))
+		if out != test.result {
+			t.Errorf("%d != %d\n Test number: %d", out, test.result, num)
 		}
 	}
 }
