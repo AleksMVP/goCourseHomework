@@ -64,7 +64,7 @@ func TestParser(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		out := parser(test.input)
+		out := tokenize(test.input)
 		for num := range out {
 			if out[num] != test.result[num] {
 				t.Errorf("%s != %s\n Test number: %d", out[num], test.result[num], num)
@@ -105,7 +105,7 @@ func TestBoth(t *testing.T) {
 	}
 
 	for num, test := range testCases {
-		out := calc(parser(test.input))
+		out := calc(tokenize(test.input))
 		if out != test.result {
 			t.Errorf("%d != %d\n Test number: %d", out, test.result, num)
 		}

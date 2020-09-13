@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
-	"unicode"
 )
 
 var weights map[string]int = map[string]int{
@@ -25,7 +25,7 @@ func invokeOperation(operation string, digits *Stack) (result int, err error) {
 	case "-":
 		result = second.(int) - first.(int)
 	case "*":
-		result= second.(int) * first.(int)
+		result = second.(int) * first.(int)
 	case "/":
 		result = second.(int) / first.(int)
 	}
@@ -38,7 +38,7 @@ func popTwoItems(s *Stack) (first, second interface{}, err error) {
 	if err != nil {
 		return
 	}
-	
+
 	second, err = s.pop()
 	return
 }
@@ -48,30 +48,30 @@ func calc(tokens []string) int {
 
 	for _, argument := range tokens {
 		if digit, err := strconv.Atoi(argument); err == nil {
-			digits.push(digit);
+			digits.push(digit)
 		} else if argument == "(" {
-			operations.push(argument);
+			operations.push(argument)
 		} else if argument == ")" {
 			for {
-				operation, err := operations.pop();
+				operation, err := operations.pop()
 				if err != nil {
 					panic("Something happened")
 				} else if operation == "(" {
-					break;
+					break
 				}
 				result, err := invokeOperation(operation.(string), &digits)
 				if err != nil {
 					panic("Something happened")
 				}
 				digits.push(result)
-			}	
+			}
 		} else if weight, ok := weights[argument]; ok {
 			topOper, err := operations.top()
 
 			if err != nil || weights[topOper.(string)] < weight {
 				operations.push(argument)
 			} else {
-				operation, _ := operations.pop();
+				operation, _ := operations.pop()
 				result, err := invokeOperation(operation.(string), &digits)
 				if err != nil {
 					panic("Something happened")
@@ -85,7 +85,7 @@ func calc(tokens []string) int {
 	}
 
 	for operations.size() > 0 {
-		operation, _ := operations.pop();
+		operation, _ := operations.pop()
 		result, err := invokeOperation(operation.(string), &digits)
 		if err != nil {
 			panic("Something happened")
@@ -101,28 +101,41 @@ func calc(tokens []string) int {
 	return result.(int)
 }
 
-func parser(line string) (result []string) {
-	var digit string
-
-	for _, run := range line {
-		if unicode.IsDigit(run) {
-			digit += string(run)
-			continue
-		} else if digit != "" {
-			result = append(result, digit)
-			digit = ""
-		}
-
-		switch run {
-		case '-', '+', '/', '*', '(', ')':
-			result = append(result, string(run))
+func indexOf(element string, data []string) int {
+	for k, v := range data {
+		if element == v {
+			return k
 		}
 	}
+	return -1
+}
 
-	if digit != "" {
-		result = append(result, digit)
+var tokenRegex = regexp.MustCompile(`(?P<legal>\d+|\-|\+|\*|/|\(|\))|(?P<ignore>\s)|(?P<error>.)`)
+
+func tokenize(code string) (result []string) {
+	groups := tokenRegex.SubexpNames()
+	legal := indexOf("legal", groups)
+	ignore := indexOf("ignore", groups)
+	err := indexOf("error", groups)
+	var row, col int
+	row = 0
+	col = 0
+	for _, elem := range tokenRegex.FindAllStringSubmatch(code, -1) {
+		if elem[legal] != "" {
+			result = append(result, elem[legal])
+			col += len(elem[legal])
+		} else if elem[ignore] != "" {
+			if elem[ignore] == "\n" {
+				col = 0
+				row++
+			} else {
+				col++
+			}
+		} else if elem[err] != "" {
+			panic(fmt.Sprintf("unexpected '%s' at (%d, %d)", elem[err], row, col))
+		}
+
 	}
-
 	return result
 }
 
@@ -132,10 +145,10 @@ func main() {
 
 	defer func() {
 		if r := recover(); r != nil {
-            fmt.Println(r)
-        }
+			fmt.Println(r)
+		}
 	}()
 
-	result := calc(parser(input))
+	result := calc(tokenize(input))
 	fmt.Println(result)
 }
