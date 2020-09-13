@@ -6,7 +6,7 @@ import (
 	"unicode"
 )
 
-var weight map[string]int = map[string]int{
+var weights map[string]int = map[string]int{
 	"+": 1,
 	"-": 1,
 	"*": 2,
@@ -43,91 +43,78 @@ func popTwoItems(s *Stack) (first, second interface{}, err error) {
 	return
 }
 
-func calc(lexems []string) (result int, err error) {
-	var digits Stack
-	var operations Stack
+func calc(tokens []string) int {
+	var digits, operations Stack
 
-	for _, oper := range lexems {
-		if priority, is := weight[oper]; is {
-			topOper, err := operations.top();
-			if err != nil || priority > weight[topOper.(string)] {
-				operations.push(oper)
-			} else if priority <= weight[topOper.(string)] {
-				operation, _ := operations.pop()
-				res, err := invokeOperation(operation.(string), &digits)
-				if err != nil {
-					return result, err
-				}
-				digits.push(res)
-				operations.push(oper)
-			}
-		} else if oper == "(" {
-			operations.push(oper)
-		} else if oper == ")" {
+	for _, argument := range tokens {
+		if digit, err := strconv.Atoi(argument); err == nil {
+			digits.push(digit);
+		} else if argument == "(" {
+			operations.push(argument);
+		} else if argument == ")" {
 			for {
-				operation, err := operations.pop()
+				operation, err := operations.pop();
 				if err != nil {
-					return result, err
-				}
-				if operation == "(" {
+					panic("Something happened")
+				} else if operation == "(" {
 					break;
 				}
-				res, err := invokeOperation(operation.(string), &digits)
+				result, err := invokeOperation(operation.(string), &digits)
 				if err != nil {
-					return result, err
+					panic("Something happened")
 				}
+				digits.push(result)
+			}	
+		} else if weight, ok := weights[argument]; ok {
+			topOper, err := operations.top()
 
-				digits.push(res)
+			if err != nil || weights[topOper.(string)] < weight {
+				operations.push(argument)
+			} else {
+				operation, _ := operations.pop();
+				result, err := invokeOperation(operation.(string), &digits)
+				if err != nil {
+					panic("Something happened")
+				}
+				digits.push(result)
+				operations.push(argument)
 			}
-		} else {  // If digit 
-			digit, err := strconv.Atoi(oper)
-			if err != nil {
-				return result, err
-			}
-			digits.push(digit)
+		} else {
+			panic("Something happened")
 		}
 	}
 
 	for operations.size() > 0 {
-		operation, _ := operations.pop()
-		res, err := invokeOperation(operation.(string), &digits)
+		operation, _ := operations.pop();
+		result, err := invokeOperation(operation.(string), &digits)
 		if err != nil {
-			return result, err
+			panic("Something happened")
 		}
-		digits.push(res)
+		digits.push(result)
 	}
 
-	res, err := digits.pop()
-	return res.(int), err
+	result, err := digits.pop()
+	if err != nil {
+		panic("Something happened")
+	}
+
+	return result.(int)
 }
 
 func parser(line string) (result []string) {
 	var digit string
-	var symbol string
 
 	for _, run := range line {
 		if unicode.IsDigit(run) {
-			if symbol != "" {
-				result = append(result, symbol)
-				symbol = ""
-			}
 			digit += string(run)
 			continue
-		}
-
-		if digit != "" {
+		} else if digit != "" {
 			result = append(result, digit)
 			digit = ""
 		}
 
 		switch run {
-		case '-', '+', '/', '*':
-			symbol = string(run)
-		case '(', ')':
-			if symbol != "" {
-				result = append(result, symbol)
-				symbol = ""
-			}
+		case '-', '+', '/', '*', '(', ')':
 			result = append(result, string(run))
 		}
 	}
@@ -142,6 +129,13 @@ func parser(line string) (result []string) {
 func main() {
 	var input string
 	fmt.Scanln(&input)
-	res, err := calc(parser(input))
-	fmt.Println(res, err)
+
+	defer func() {
+		if r := recover(); r != nil {
+            fmt.Println(r)
+        }
+	}()
+
+	result := calc(parser(input))
+	fmt.Println(result)
 }
