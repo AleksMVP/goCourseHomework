@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 )
 
 type Params struct {
@@ -33,11 +32,11 @@ func read(param Params) (array []string, err error) {
 	}
 
 	for {
-		str, err := reader.ReadString('\n')
+		byteArray, _, err := reader.ReadLine()
 		if err != nil {
 			break
 		}
-		array = append(array, strings.Trim(str, "\n"))
+		array = append(array, string(byteArray))
 	}
 
 	return array, nil
