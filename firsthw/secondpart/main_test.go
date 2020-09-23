@@ -33,7 +33,7 @@ func TestCalc(t *testing.T) {
 	}
 
 	for num, test := range testCases {
-		out := calc(test.input)
+		out, _ := calc(test.input)
 		if out != test.result {
 			t.Errorf("%d != %d\n Test number: %d", out, test.result, num)
 		}
@@ -77,36 +77,66 @@ func TestBoth(t *testing.T) {
 	var testCases = []struct {
 		input string
 		result int
+		err bool
 	}{
 		{
 			input: "5+10",
 			result: 15,
+			err: false,
 		},
 		{
 			input: "2+2*2",
 			result: 6,
+			err: false,
 		},
 		{
-			input: "1000+2*(25+100/4*(2*(2+2)))",
+			input: "1000 + 2*(25 + 100/4*(2*(2 + 2)))",
 			result: 1450,
+			err: false,
 		},
 		{
-			input: "(1000+5)",
+			input: "(1000 + 5)",
 			result: 1005,
+			err: false,
 		},
 		{
-			input: "(1+2)-3",
+			input: "(1 + 2) - 3",
 			result: 0,
+			err: false,
 		},
 		{
-			input: "(1+2)*3",
+			input: "(1 + 2) * 3",
 			result: 9,
+			err: false,
+		},
+		{
+			input: "1/0",
+			result: 0,
+			err: true,
+		},
+		{
+			input: "5/-5",
+			result: -1,
+			err: false,
+		},
+		{
+			input: "5*-5",
+			result: -25,
+			err: false,
 		},
 	}
 
 	for num, test := range testCases {
-		out := calc(tokenize(test.input))
-		if out != test.result {
+		out, err := calc(tokenize(test.input))
+		if err == nil && test.err {
+			t.Errorf("Expect error\n Test number: %d", num)	
+		}
+
+		if err != nil && !test.err {
+			t.Errorf("Unexpected error\n Test number: %d", num)	
+		}
+		
+		if err == nil && out != test.result {
 			t.Errorf("%d != %d\n Test number: %d", out, test.result, num)
 		}
 	}

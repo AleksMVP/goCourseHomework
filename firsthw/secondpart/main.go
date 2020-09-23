@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"errors"
 )
 
 var weights map[string]int = map[string]int{
@@ -27,6 +28,9 @@ func invokeOperation(operation string, digits *Stack) (result int, err error) {
 	case "*":
 		result = second.(int) * first.(int)
 	case "/":
+		if (first.(int) == 0) {
+			return result, errors.New("Division by zero")
+		}
 		result = second.(int) / first.(int)
 	}
 
@@ -43,7 +47,7 @@ func popTwoItems(s *Stack) (first, second interface{}, err error) {
 	return
 }
 
-func calc(tokens []string) int {
+func calc(tokens []string) (int, error) {
 	var digits, operations Stack
 
 	for _, argument := range tokens {
@@ -61,7 +65,7 @@ func calc(tokens []string) int {
 				}
 				result, err := invokeOperation(operation.(string), &digits)
 				if err != nil {
-					panic("Something happened")
+					return 0, err
 				}
 				digits.push(result)
 			}
@@ -74,7 +78,7 @@ func calc(tokens []string) int {
 				operation, _ := operations.pop()
 				result, err := invokeOperation(operation.(string), &digits)
 				if err != nil {
-					panic("Something happened")
+					return 0, err
 				}
 				digits.push(result)
 				operations.push(argument)
@@ -88,7 +92,7 @@ func calc(tokens []string) int {
 		operation, _ := operations.pop()
 		result, err := invokeOperation(operation.(string), &digits)
 		if err != nil {
-			panic("Something happened")
+			return 0, err
 		}
 		digits.push(result)
 	}
@@ -98,7 +102,7 @@ func calc(tokens []string) int {
 		panic("Something happened")
 	}
 
-	return result.(int)
+	return result.(int), nil
 }
 
 func indexOf(element string, data []string) int {
@@ -110,20 +114,34 @@ func indexOf(element string, data []string) int {
 	return -1
 }
 
-var tokenRegex = regexp.MustCompile(`(?P<legal>\d+|\-|\+|\*|/|\(|\))|(?P<ignore>\s)|(?P<error>.)`)
+var tokenRegex = regexp.MustCompile(`(?P<legal>\d+|\-d+|\-|\+|\*|/|\(|\))|(?P<ignore>\s)|(?P<error>.)`)
 
 func tokenize(code string) (result []string) {
 	groups := tokenRegex.SubexpNames()
+
+	isNegative := false
+
 	legal := indexOf("legal", groups)
 	ignore := indexOf("ignore", groups)
 	err := indexOf("error", groups)
+
 	var row, col int
-	row = 0
-	col = 0
-	for _, elem := range tokenRegex.FindAllStringSubmatch(code, -1) {
+	allSub := tokenRegex.FindAllStringSubmatch(code, -1)
+	previous := ""
+	for _, elem := range allSub {
 		if elem[legal] != "" {
-			result = append(result, elem[legal])
+			if _, err := strconv.Atoi(elem[legal]); err == nil && isNegative {
+				result = append(result, "-" + elem[legal])
+				isNegative = false
+			} else {
+				if (previous == "/" || previous == "*" || previous == "-" || previous == "+") && elem[legal] == "-" {
+					isNegative = true
+				} else {
+					result = append(result, elem[legal])
+				}
+			}
 			col += len(elem[legal])
+			previous = elem[legal]
 		} else if elem[ignore] != "" {
 			if elem[ignore] == "\n" {
 				col = 0
@@ -136,6 +154,7 @@ func tokenize(code string) (result []string) {
 		}
 
 	}
+
 	return result
 }
 
@@ -149,6 +168,9 @@ func main() {
 		}
 	}()
 
-	result := calc(tokenize(input))
+	result, err := calc(tokenize(input))
+	if err != nil {
+		fmt.Println(err);
+	}
 	fmt.Println(result)
 }

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"strconv"
 	"sort"
+	"strconv"
 	"sync"
 )
 
@@ -12,12 +12,11 @@ func worker(function job, in, out chan interface{}, wg *sync.WaitGroup) {
 	wg.Done()
 }
 
-var mutex chan struct{} = make(chan struct{}, 1)
-
+var mutex sync.Mutex
 func checkMd5(out chan string, data string) {
-	mutex <- struct{}{}
+	mutex.Lock()
 	out <- DataSignerMd5(data)
-	<- mutex
+	mutex.Unlock()
 }
 
 func checkCrc32(out chan string, in chan string) {
@@ -25,7 +24,7 @@ func checkCrc32(out chan string, in chan string) {
 }
 
 type CrcChans struct {
-	firstCrc32 chan string
+	firstCrc32  chan string
 	secondCrc32 chan string
 }
 
@@ -45,8 +44,8 @@ func SingleHash(in, out chan interface{}) {
 		tmp := make(chan string, 1)
 		tmp <- strconv.Itoa(data.(int))
 
-		go checkMd5(md5, strconv.Itoa(data.(int)))
 		go checkCrc32(firstCrc32, tmp)
+		go checkMd5(md5, strconv.Itoa(data.(int)))
 		go checkCrc32(secondCrc32, md5)
 	}
 
@@ -82,42 +81,45 @@ func MultiHash(in, out chan interface{}) {
 
 func CombineResults(in, out chan interface{}) {
 	var data []string
-	for i := range in {
-		value, _ := i.(string)
+	for itemFromIn := range in {
+		value, err := itemFromIn.(string)
+		if !err {
+			panic("Invalid channel data")
+		}
 		data = append(data, value)
 	}
 	sort.Strings(data)
 
 	var result string
 	for num, i := range data {
-		result += i;
-		if num != len(data) - 1 {
+		result += i
+		if num != len(data)-1 {
 			result += "_"
 		}
 	}
 	out <- result
 }
 
-func ExecutePipeline(args... job) {
+func ExecutePipeline(args ...job) {
 	var tmpChanIn chan interface{}
 	var tmpChanOut chan interface{}
 
 	wg := sync.WaitGroup{}
 
-	for num, i := range args {
+	for num, arg := range args {
 		wg.Add(1)
 		if num % 2 == 0 {
 			tmpChanOut = make(chan interface{})
-			go worker(i, tmpChanIn, tmpChanOut, &wg)
+			go worker(arg, tmpChanIn, tmpChanOut, &wg)
 		} else {
 			tmpChanIn = make(chan interface{})
-			go worker(i, tmpChanOut, tmpChanIn, &wg)
-		}	
+			go worker(arg, tmpChanOut, tmpChanIn, &wg)
+		}
 	}
 
 	wg.Wait()
 }
 
 func main() {
-	
+
 }
