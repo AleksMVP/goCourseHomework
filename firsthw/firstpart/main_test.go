@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"fmt"
 )
 
 func TestUniq(t *testing.T) {
@@ -127,6 +128,8 @@ func TestUniq(t *testing.T) {
 			},
 			[]string{
 				"We love music.",
+				"",
+				"I love music of Kartik.",
 				"Thanks.",
 			},
 		},
@@ -149,13 +152,122 @@ func TestUniq(t *testing.T) {
 				"Thanks.",
 			},
 		},
+		{
+			Params{f: 1, s: 1},
+			[]string{
+				"I love music.",
+				"B bove music.",
+				"C kove music.",
+				"",
+				"I love music of Kartik.",
+				"We bove music of Kartik.",
+				"Thanks.",
+			},
+			[]string{
+				"I love music.",
+				"",
+				"I love music of Kartik.",
+				"Thanks.",
+			},
+		},
+		{
+			Params{f: 2, s: 2},
+			[]string{
+				"I love music.",
+				"B bove music.",
+				"C kove music.",
+				"",
+				"I love music of Kartik.",
+				"We bove music of Kartik.",
+				"Thanks.",
+			},
+			[]string{
+				"I love music.",
+				"",
+				"I love music of Kartik.",
+				"Thanks.",
+			},
+		},
+		{
+			Params{f: 2, s: 2},
+			[]string{
+				"I love music.",
+				"B bove music.",
+				"C kove music.",
+				"",
+				"I love music of Kartik.",
+				"We bove music of Kartik.",
+				"Thanks ",
+			},
+			[]string{
+				"I love music.",
+				"",
+				"I love music of Kartik.",
+			},
+		},
+		{
+			Params{f: 4, s: 7},
+			[]string{
+				"I love music.",
+				"B bove music.",
+				"C kove music.",
+				"",
+				"I love music of Kartik.",
+				"We bove music of Kartik.",
+				"Thanks ",
+			},
+			[]string{
+				"I love music.",
+			},
+		},
+		{
+			Params{f: 4, s: 6},
+			[]string{
+				"I love music.",
+				"B bove music.",
+				"C kove music.",
+				"",
+				"I love music of Kartik.",
+				"We bove music of Kartik.",
+				"Thanks.",
+			},
+			[]string{
+				"I love music.",
+				"I love music of Kartik.",
+			},
+		},
+		{
+			Params{f: 4, s: 5},
+			[]string{
+				"I love music.",
+				"B bove music.",
+				"C kove music.",
+				"",
+				"I love music of Kartik.",
+				"We bove music of Kartik.",
+				"Thanks.",
+			},
+			[]string{
+				"I love music.",
+				"",
+				"I love music of Kartik.",
+				"Thanks.",
+			},
+		},
 	}
 
-	for _, test := range testCases {
+	for n, test := range testCases {
 		out := uniq(test.param, test.input)
+		if len(out) != len(test.result) {
+			t.Errorf("len out != expected len\n Test number: %d", n)
+			fmt.Println(out)
+			fmt.Println(test.result)
+		}
 		for num := range out {
 			if test.result[num] != out[num] {
-				t.Errorf("%s != %s \n Test number: %d", out[num], test.result[num], num)
+				t.Errorf("%s != %s \n Test number: %d", out[num], test.result[num], n)
+				fmt.Println(out)
+				fmt.Println(test.result)
 			}
 		}
 	}

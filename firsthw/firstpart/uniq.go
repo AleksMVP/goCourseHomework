@@ -13,19 +13,33 @@ func uniq(param Params, input []string) (out []string) {
 		for num, line := range inputCopy {
 			lineInRune := []rune(line)
 			spaceCount := 0
-			lastSpacePos := -1
+			lastSpacePos := 0
+			spacePos := 0
 			for pos, r := range lineInRune {
 				if r == ' ' {
 					spaceCount++
-				}
-				if spaceCount == param.f {
 					lastSpacePos = pos
 				}
+				if spaceCount == param.f {
+					spacePos = pos
+					break
+				}
 			}
-			if lastSpacePos != -1 || spaceCount == 0 {
-				inputCopy[num] = string(lineInRune[lastSpacePos+1:])
+
+			if spacePos != 0 {
+				if spacePos != len(lineInRune) - 1 {
+					inputCopy[num] = string(lineInRune[spacePos + 1:])
+				} else {
+					inputCopy[num] = string(lineInRune[spacePos:])
+				}
+			} else if spaceCount < param.f && spaceCount != 0 {
+				if lastSpacePos != len(lineInRune) - 1 {
+					inputCopy[num] = string(lineInRune[lastSpacePos + 1:])
+				} else {
+					inputCopy[num] = ""
+				}
 			} else {
-				inputCopy[num] = ""
+				inputCopy[num] = string(lineInRune)
 			}
 		}
 	}

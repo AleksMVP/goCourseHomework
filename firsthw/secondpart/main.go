@@ -17,7 +17,7 @@ var weights map[string]int = map[string]int{
 func invokeOperation(operation string, digits *Stack) (result int, err error) {
 	first, second, err := popTwoItems(digits)
 	if err != nil {
-		return result, err
+		return result, errors.New("Invalid expression")
 	}
 
 	switch operation {
@@ -128,13 +128,15 @@ func tokenize(code string) (result []string) {
 	var row, col int
 	allSub := tokenRegex.FindAllStringSubmatch(code, -1)
 	previous := ""
-	for _, elem := range allSub {
+	for num, elem := range allSub {
 		if elem[legal] != "" {
 			if _, err := strconv.Atoi(elem[legal]); err == nil && isNegative {
 				result = append(result, "-" + elem[legal])
 				isNegative = false
 			} else {
-				if (previous == "/" || previous == "*" || previous == "-" || previous == "+") && elem[legal] == "-" {
+				if num == 0 && elem[legal] == "-" {
+					isNegative = true;
+				} else if (previous == "/" || previous == "*" || previous == "-" || previous == "+") && elem[legal] == "-" {
 					isNegative = true
 				} else {
 					result = append(result, elem[legal])
