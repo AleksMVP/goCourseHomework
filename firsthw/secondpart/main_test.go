@@ -124,6 +124,16 @@ func TestBoth(t *testing.T) {
 			result: -25,
 			err: false,
 		},
+		{
+			input: "-5-5",
+			result: -10,
+			err: false,
+		},
+		{
+			input: "-5/-5",
+			result: 1,
+			err: false,
+		},
 	}
 
 	for num, test := range testCases {

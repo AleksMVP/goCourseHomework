@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"strings"
 )
 
 func worker(function job, in, out chan interface{}, wg *sync.WaitGroup) {
@@ -62,8 +63,10 @@ func MultiHash(in, out chan interface{}) {
 		var preResult = make([]chan string, 6, 6)
 		for i := 0; i < 6; i++ {
 			preResult[i] = make(chan string, 1)
+
 			tmp := make(chan string, 1)
 			tmp <- strconv.Itoa(i) + data.(string)
+
 			go checkCrc32(preResult[i], tmp)
 		}
 
@@ -90,14 +93,7 @@ func CombineResults(in, out chan interface{}) {
 	}
 	sort.Strings(data)
 
-	var result string
-	for num, i := range data {
-		result += i
-		if num != len(data)-1 {
-			result += "_"
-		}
-	}
-	out <- result
+	out <- strings.Join(data, "_");
 }
 
 func ExecutePipeline(args ...job) {
@@ -121,5 +117,4 @@ func ExecutePipeline(args ...job) {
 }
 
 func main() {
-
 }
